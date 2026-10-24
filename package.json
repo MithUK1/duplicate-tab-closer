@@ -1,0 +1,16 @@
+{
+  "name": "dup-tab-closer",
+  "version": "1.2.0",
+  "description": "Browser extension that closes duplicate tabs automatically or on demand.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "node build.js",
+    "test": "node --test",
+    "lint": "npm run build && web-ext lint --source-dir dist/firefox",
+    "pack:firefox": "npm run build && web-ext build --source-dir dist/firefox --artifacts-dir dist/packages --overwrite-dest"
+  },
+  "devDependencies": {
+    "web-ext": "^10.8.0"
+  }
+}

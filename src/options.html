@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Duplicate Tab Closer - Settings</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 15px system-ui, sans-serif; max-width: 560px; margin: 32px auto; padding: 0 16px; }
+    h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
+    h1 img { width: 32px; height: 32px; }
+    h2 { font-size: 15px; margin: 28px 0 8px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
+    .row { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; }
+    .row input[type=checkbox] { margin-top: 4px; }
+    .row small { display: block; opacity: .7; margin-top: 2px; }
+    .block { margin: 12px 0; }
+    .block label { display: block; margin-bottom: 4px; }
+    select, textarea, input[type=number] { box-sizing: border-box; font: inherit; padding: 6px; }
+    select, textarea { width: 100%; }
+    input[type=number] { width: 100px; }
+    textarea { height: 110px; font-family: ui-monospace, monospace; font-size: 13px; }
+    #saved { color: #2a7; margin-left: 8px; font-size: 14px; font-weight: normal; opacity: 0; transition: opacity .3s; }
+    #saved.show { opacity: 1; }
+    .stat { margin-top: 28px; padding: 12px; border-radius: 8px; background: rgba(127,127,127,.12); }
+    button { padding: 6px 12px; cursor: pointer; }
+    a { color: #3b82f6; cursor: pointer; }
+    .disabled { opacity: .45; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <h1><img src="icons/icon48.png" alt=""> Duplicate Tab Closer <span id="saved">Saved</span></h1>
+
+  <h2>Toolbar button</h2>
+  <div class="block">
+    <label for="iconAction">When I click the toolbar icon</label>
+    <select id="iconAction">
+      <option value="all">Close all duplicates straight away</option>
+      <option value="current">Close duplicates of the current tab only</option>
+      <option value="menu">Show the menu</option>
+    </select>
+    <small style="opacity:.7;display:block;margin-top:4px">Right-click the icon for reopen, recently closed, history and these settings.</small>
+  </div>
+  <label class="row" id="confirmRow">
+    <input type="checkbox" id="iconConfirm">
+    <span>Ask before closing<small>Shows how many tabs will close and lets you cancel. Only applies to the two close options above.</small></span>
+  </label>
+  <label class="row">
+    <input type="checkbox" id="showBadge">
+    <span>Show the duplicate count on the toolbar icon<small>A live number of how many tabs a click would close. Hidden when there are none.</small></span>
+  </label>
+
+  <h2>Behaviour</h2>
+  <label class="row">
+    <input type="checkbox" id="autoClose">
+    <span>Auto-close duplicates as they open<small>When off, duplicates are only closed from the toolbar button.</small></span>
+  </label>
+  <label class="row">
+    <input type="checkbox" id="allWindows">
+    <span>Check all windows<small>When off, only tabs in the same window count as duplicates.</small></span>
+  </label>
+  <label class="row">
+    <input type="checkbox" id="closeManualDuplicates">
+    <span>Also auto-close tabs I duplicate on purpose<small>Off by default. When off, a tab made with right-click &gt; Duplicate is left alone, along with its original. The toolbar close buttons still close them.</small></span>
+  </label>
+  <div class="block">
+    <label for="closeWhich">When closing duplicates in bulk, close</label>
+    <select id="closeWhich">
+      <option value="right">The one furthest right (default)</option>
+      <option value="newest">The most recently opened</option>
+      <option value="active">Keep the tab I am on, close the others</option>
+    </select>
+    <small style="opacity:.7;display:block;margin-top:4px">Pinned tabs are always kept. Reopened tabs go back to the position they were closed from, so closing again removes the same one.</small>
+  </div>
+  <div class="block">
+    <label for="keep">When a duplicate opens, keep</label>
+    <select id="keep">
+      <option value="existing">The existing tab (close the new one)</option>
+      <option value="new">The new tab (close the old one)</option>
+    </select>
+  </div>
+
+  <h2>What counts as a duplicate</h2>
+  <label class="row">
+    <input type="checkbox" id="ignoreHash">
+    <span>Ignore #fragment<small>page.html#top and page.html#bottom match.</small></span>
+  </label>
+  <label class="row">
+    <input type="checkbox" id="ignoreQuery">
+    <span>Ignore ?query string<small>Off by default, as many sites use the query to pick the page (e.g. YouTube videos).</small></span>
+  </label>
+
+  <h2>Never touch these sites</h2>
+  <textarea id="whitelist" placeholder="mail.google.com&#10;youtube.com&#10;one domain per line"></textarea>
+  <small style="opacity:.7">Subdomains are included automatically.</small>
+
+  <h2>Closed tab history</h2>
+  <label class="row">
+    <input type="checkbox" id="trackHistory">
+    <span>Also record tabs I close myself<small>Duplicates closed by this extension are always recorded so they can be reopened. Web pages only. Normally kept in memory only.</small></span>
+  </label>
+  <label class="row">
+    <input type="checkbox" id="persistHistory">
+    <span>Keep the history after the browser closes<small>Off by default, so the history is wiped when the browser closes. When on, the URLs and titles of closed tabs are saved in this browser profile until you clear them. Reloading or updating the extension also wipes a session-only history.</small></span>
+  </label>
+  <div class="block">
+    <label for="historyLimit">Maximum entries to keep</label>
+    <input type="number" id="historyLimit" min="20" max="2000" step="10">
+  </div>
+  <p><a id="openHistory">Open closed tab history</a></p>
+
+  <div class="stat">
+    Duplicates closed so far: <b id="total">0</b>
+    <button id="reset" style="margin-left:12px">Reset</button>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
