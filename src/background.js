@@ -13,6 +13,7 @@ const DEFAULTS = {
   iconConfirm: false, // ask before closing when iconAction is not "menu"
   trackHistory: true, // record non-duplicate closes too (duplicates are always recorded)
   historyLimit: 500,
+  historyMinutes: 5, // closed tabs are forgotten after this many minutes (0 = never)
   closeManualDuplicates: false, // auto-close tabs the user duplicated on purpose (right-click > Duplicate)
   persistHistory: false, // keep closed-tab history after the browser closes (off = session only)
   closeWhich: "right", // bulk close keeps: "right" (closes the furthest right) | "newest" | "active"
@@ -106,9 +107,16 @@ async function histArea() {
   const { persistHistory } = await api.storage.local.get({ persistHistory: false });
   return persistHistory ? api.storage.local : api.storage.session;
 }
+const fresh = (items, minutes) =>
+  minutes > 0 ? items.filter((e) => Date.now() - e.closedAt < minutes * 60000) : items;
+
 async function hget() {
   const area = await histArea();
-  return (await area.get({ history: [] })).history;
+  const [{ history }, { historyMinutes }] = await Promise.all([
+    area.get({ history: [] }),
+    api.storage.local.get({ historyMinutes: DEFAULTS.historyMinutes }),
+  ]);
+  return fresh(history, historyMinutes);
 }
 async function hset(value) {
   const area = await histArea();
@@ -131,6 +139,20 @@ function migrateHistory(toLocal) {
     await to.set({ history: merged });
     await from.remove("history");
   });
+}
+
+// Removes entries older than the retention time, then lets the tab cache forget their pages.
+async function expireHistory() {
+  await locked(async () => {
+    const area = await histArea();
+    const [{ history }, { historyMinutes }] = await Promise.all([
+      area.get({ history: [] }),
+      api.storage.local.get({ historyMinutes: DEFAULTS.historyMinutes }),
+    ]);
+    const kept = fresh(history, historyMinutes);
+    if (kept.length !== history.length) await area.set({ history: kept });
+  });
+  await rebuildCache();
 }
 
 const EMPTY_ALLOW = () => ({ tabs: {}, urls: {} });
@@ -286,10 +308,12 @@ async function execute(mode, tabArg) {
   return tabs.length;
 }
 
-// Auto mode: runs when a tab finishes loading or changes URL.
+// Auto mode: runs when a tab finishes loading or changes URL. Only the tab in front is
+// closed automatically; a duplicate opened in the background (middle click) is left for the
+// user to deal with, and shows up in the toolbar count.
 async function checkTab(tab) {
   const s = await getSettings();
-  if (!s.autoClose || !isCheckable(tab.url)) return;
+  if (!s.autoClose || !tab.active || !isCheckable(tab.url)) return;
   if (isWhitelisted(tab.url, parseWhitelist(s.whitelist))) return;
 
   const key = groupKey(tab, s);
@@ -661,6 +685,7 @@ api.storage.onChanged.addListener((changes, area) => {
   ) {
     scheduleRefresh();
   }
+  if (area === "local" && changes.historyMinutes) expireHistory();
   if (area === "local" && changes.persistHistory) {
     migrateHistory(!!changes.persistHistory.newValue).then(scheduleMenus);
   }
@@ -741,7 +766,13 @@ api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true;
 });
 
+api.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "expire-history") expireHistory();
+});
+
 // Runs every time the background wakes up.
+api.alarms.create("expire-history", { periodInMinutes: 1 });
+expireHistory();
 applyIconBehaviour();
 rebuildCache();
 scheduleMenus();

@@ -11,7 +11,7 @@
     h2 { font-size: 15px; margin: 28px 0 8px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
     .row { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; }
     .row input[type=checkbox] { margin-top: 4px; }
-    .row small { display: block; opacity: .7; margin-top: 2px; }
+    .row small, .block small { display: block; opacity: .7; margin-top: 2px; }
     .block { margin: 12px 0; }
     .block label { display: block; margin-bottom: 4px; }
     select, textarea, input[type=number] { box-sizing: border-box; font: inherit; padding: 6px; }
@@ -51,7 +51,7 @@
   <h2>Behaviour</h2>
   <label class="row">
     <input type="checkbox" id="autoClose">
-    <span>Auto-close duplicates as they open<small>When off, duplicates are only closed from the toolbar button.</small></span>
+    <span>Auto-close duplicates as they open<small>Only applies to the tab you are looking at. Duplicates opened in the background (middle click) are left alone and counted on the icon. When off, duplicates are only closed from the toolbar button.</small></span>
   </label>
   <label class="row">
     <input type="checkbox" id="allWindows">
@@ -104,6 +104,10 @@
   <div class="block">
     <label for="historyLimit">Maximum entries to keep</label>
     <input type="number" id="historyLimit" min="20" max="2000" step="10">
+  </div>
+  <div class="block">
+    <label for="historyMinutes">Forget closed tabs after (minutes)<small>Entries older than this are removed from the history for good. 5 by default. Set 0 to keep them until you clear the history.</small></label>
+    <input type="number" id="historyMinutes" min="0" max="1440" step="1">
   </div>
   <p><a id="openHistory">Open closed tab history</a></p>
 

@@ -53,7 +53,7 @@ const tabEvents = {
   onMoved: makeEvent(),
 };
 const onMessage = makeEvent();
-const recorded = { badge: [], title: [], menus: [] };
+const recorded = { badge: [], title: [], menus: [], activated: [] };
 
 global.chrome = {
   storage: { local: makeArea("local"), session: makeArea("session"), onChanged: makeEvent() },
@@ -79,6 +79,7 @@ global.chrome = {
     update: async () => {},
     onClicked: makeEvent(),
   },
+  alarms: { create: () => {}, onAlarm: makeEvent() },
   windows: {
     getLastFocused: async () => ({ id: 1 }),
     update: async () => {},
@@ -96,7 +97,9 @@ global.chrome = {
       if (!tab) throw new Error("no such tab");
       return { ...tab };
     },
-    update: async () => {},
+    update: async (id, props) => {
+      if (props.active) recorded.activated.push(id);
+    },
     remove: async (ids) => {
       for (const id of [].concat(ids)) {
         tabs = tabs.filter((t) => t.id !== id);
@@ -161,6 +164,7 @@ async function reset(settings = {}) {
     closeManualDuplicates: false,
     closeWhich: "right",
     persistHistory: false,
+    historyMinutes: 0,
     ...settings,
   });
 }
@@ -218,7 +222,7 @@ test("auto-close removes a new duplicate and records it", async () => {
   await reset();
   await open("https://c.com");
   await open("https://filler.com");
-  const dup = await open("https://c.com");
+  const dup = await open("https://c.com", { active: true });
   await update(dup, { status: "complete" });
 
   assert.ok(!alive(dup));
@@ -293,7 +297,7 @@ test("a same-URL tab opened away from its twin is still auto-closed", async () =
   const original = await open("https://dup.com");
   await update(original, { status: "complete" });
   await open("https://filler.com");
-  const stray = await open("https://dup.com");
+  const stray = await open("https://dup.com", { active: true });
   await update(stray, { status: "complete" });
 
   assert.ok(!alive(stray));
@@ -303,7 +307,7 @@ test("duplicates are auto-closed when the option is switched on", async () => {
   await reset({ closeManualDuplicates: true });
   const original = await open("https://dup.com");
   await update(original, { status: "complete" });
-  const copy = await open("https://dup.com", { at: 1 });
+  const copy = await open("https://dup.com", { at: 1, active: true });
   await update(copy, { status: "complete" });
 
   assert.ok(!alive(copy));
@@ -463,4 +467,62 @@ test("stale tab cache entries age out on their own", async () => {
   await chrome.tabs.onMoved.fire(1, {});
   await wait(250);
   assert.ok(!JSON.stringify(store.session).includes("secret-stale2"));
+});
+
+test("closed tabs are forgotten after the retention time", async () => {
+  await reset({ autoClose: false, historyMinutes: 5 });
+  await open("https://old.example/");
+  await open("https://old.example/");
+  await settle();
+  await send({ type: "execute", mode: "all" });
+  await settle();
+  assert.strictEqual((await history()).length, 1);
+
+  store.session.history[0].closedAt = Date.now() - 6 * 60000;
+  assert.strictEqual((await history()).length, 0, "expired entries are hidden at once");
+
+  await chrome.alarms.onAlarm.fire({ name: "expire-history" });
+  await settle();
+  assert.strictEqual(store.session.history.length, 0, "and removed from storage");
+
+  await chrome.storage.local.set({ historyMinutes: 0 });
+  await open("https://old2.example/");
+  await open("https://old2.example/");
+  await settle();
+  await send({ type: "execute", mode: "all" });
+  await settle();
+  store.session.history[0].closedAt = Date.now() - 600 * 60000;
+  assert.strictEqual((await history()).length, 1, "0 keeps entries until cleared");
+});
+
+test("a duplicate opened in the background is left open and counted", async () => {
+  await reset();
+  const first = await open("https://bg.example/", { active: true });
+  await update(first, { status: "complete" });
+  await open("https://filler.example/");
+  recorded.activated = [];
+
+  const bg = await open("https://bg.example/", { active: false });
+  await update(bg, { status: "complete" });
+  await wait(400);
+  assert.ok(alive(bg), "the background duplicate stays open");
+  assert.deepStrictEqual(recorded.activated, [], "and focus stays where it was");
+  assert.strictEqual(recorded.badge.at(-1), "1", "the toolbar count shows it");
+
+  await send({ type: "execute", mode: "all" });
+  await settle();
+  assert.ok(!alive(bg) && alive(first), "closing from the toolbar removes it");
+});
+
+test("a duplicate opened in the foreground is closed and jumps to the original", async () => {
+  await reset();
+  const first = await open("https://fg.example/", { active: true });
+  await update(first, { status: "complete" });
+  await open("https://filler.example/");
+  recorded.activated = [];
+
+  const fg = await open("https://fg.example/", { active: true });
+  await update(fg, { status: "complete" });
+  assert.ok(!alive(fg));
+  assert.deepStrictEqual(recorded.activated, [first.id]);
 });

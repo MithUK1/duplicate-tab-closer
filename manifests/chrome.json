@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Duplicate Tab Closer",
-  "version": "1.2.0",
+  "version": "1.3.2",
   "description": "Closes duplicate tabs automatically or on demand.",
   "permissions": [
     "tabs",
     "storage",
-    "contextMenus"
+    "contextMenus",
+    "alarms"
   ],
   "background": {
     "service_worker": "background.js"

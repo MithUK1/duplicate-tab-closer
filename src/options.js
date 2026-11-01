@@ -14,6 +14,7 @@ const DEFAULTS = {
   iconConfirm: false,
   trackHistory: true,
   historyLimit: 500,
+  historyMinutes: 5,
   closeManualDuplicates: false,
   closeWhich: "right",
   persistHistory: false,
@@ -67,6 +68,14 @@ function syncConfirmRow() {
     const n = Math.min(2000, Math.max(20, parseInt(lim.value, 10) || DEFAULTS.historyLimit));
     lim.value = n;
     save("historyLimit", n);
+  });
+
+  const mins = $("historyMinutes");
+  mins.value = s.historyMinutes;
+  mins.addEventListener("change", () => {
+    const n = Math.min(1440, Math.max(0, parseInt(mins.value, 10) || 0));
+    mins.value = n;
+    save("historyMinutes", n);
   });
 
   $("total").textContent = s.totalClosed;

@@ -1,15 +1,22 @@
 # Duplicate Tab Closer
 
-A small browser extension that closes duplicate tabs, either automatically as they open or on demand with one click. Works in Chrome, Edge, Brave and Firefox.
+Closes duplicate browser tabs, either automatically as they open or on demand with one click. Works in Chrome, Edge, Brave and Firefox.
+
+| | |
+| --- | --- |
+| Version | 1.3.2 |
+| Repository | https://github.com/MithUK1/duplicate-tab-closer |
+| Licence | MIT |
 
 ## Features
 
 - **One-click cleanup.** Click the toolbar icon to close every duplicate tab. The icon shows a live count of how many tabs a click would close.
-- **Auto-close.** Optionally closes a tab the moment it loads a page you already have open, and jumps you to the existing tab.
-- **Your own duplicates are left alone.** A tab made with right-click > Duplicate is kept, unless you switch that option on.
+- **Auto-close.** Optionally closes the tab you are looking at the moment it loads a page you already have open, and takes you to the existing one.
+- **Background tabs are left alone.** A link opened in the background (middle click) is never closed or switched to. It stays open and is counted on the icon, so you choose when to close it.
+- **Your own duplicates are kept.** A tab made with right-click > Duplicate stays open, unless you switch that option on.
 - **Right-click menu on the icon.** Close all duplicates, close duplicates of the current tab, reopen the last closed duplicate, browse recently closed tabs, open the full history.
-- **Undo, one tab at a time.** Reopen steps back through closed duplicates, newest first. Reopened tabs go back to the position they were closed from.
-- **Session history of closed tabs**, with search, filters and reopen. Wiped when the browser closes unless you choose otherwise.
+- **Undo, one tab at a time.** Reopen steps back through closed duplicates, newest first. Reopened tabs return to the position they were closed from.
+- **Closed tab history** with search, filters and reopen. Entries are forgotten after a set number of minutes (5 by default) and the whole history is wiped when the browser closes, unless you choose otherwise.
 - **Configurable.** Which duplicate to close, what counts as a duplicate, sites to never touch, confirmation prompts and more.
 
 ## Install
@@ -48,7 +55,7 @@ Firefox release builds only install extensions that Mozilla has signed.
 | Toolbar click | Close all, close this tab's duplicates, or show the menu |
 | Ask before closing | Shows how many tabs will close, with a cancel option |
 | Duplicate count on icon | Live badge, hidden when there are none |
-| Auto-close duplicates as they open | On by default |
+| Auto-close duplicates as they open | On by default. Only applies to the tab you are looking at |
 | Check all windows | Or only the window the tab is in |
 | Also auto-close tabs I duplicate on purpose | Off by default |
 | When a duplicate opens, keep | The existing tab or the new one |
@@ -58,6 +65,7 @@ Firefox release builds only install extensions that Mozilla has signed.
 | Record tabs I close myself | Duplicates closed by the extension are always recorded |
 | Keep the history after the browser closes | Off by default |
 | Maximum history entries | 500 by default |
+| Forget closed tabs after | Minutes before an entry is removed for good. 5 by default, 0 keeps them until cleared |
 
 Pinned tabs are always kept in preference to unpinned ones.
 
@@ -67,11 +75,13 @@ Two tabs are duplicates when their URLs match after the options above are applie
 
 Browsers do not say when a tab was made with **Duplicate**. The extension treats a new tab as a deliberate duplicate when it opens directly beside a tab with the same URL, or its opener has the same URL. Those tabs, and the tab they came from, are exempt from auto-close. As a result, a tab opened right next to a tab with the same URL is also left open.
 
+Auto-close only acts on the tab in front of you. A duplicate that opens in the background is left open and counted on the toolbar icon until you close it.
+
 ## Privacy
 
-Nothing leaves your browser and nothing is collected. The `tabs` permission is used to read tab URLs and titles for comparison and for the closed tab history. The `contextMenus` permission adds the right-click menu on the icon, and `storage` holds settings.
+Nothing leaves your browser and nothing is collected. The `tabs` permission is used to read tab URLs and titles for comparison and for the closed tab history. The `contextMenus` permission adds the right-click menu on the icon, `alarms` runs the once-a-minute clean-up of expired history, and `storage` holds settings.
 
-The closed tab history is kept in memory only and is wiped when the browser closes or the extension is reloaded. If you turn on **Keep the history after the browser closes**, URLs and titles of closed tabs are saved in the browser profile until you clear them. Clearing the history also removes the extension's internal working copies of closed tab URLs.
+The closed tab history is kept in memory only. Each entry is removed after the retention time (5 minutes by default), and everything is wiped when the browser closes or the extension is reloaded. If you turn on **Keep the history after the browser closes**, URLs and titles of closed tabs are saved in the browser profile until they expire or you clear them. Clearing the history also removes the extension's internal working copies of closed tab URLs.
 
 ## Development
 
@@ -81,7 +91,7 @@ npm run lint         # build and lint the Firefox extension with web-ext
 npm run pack:firefox # build a zip for submission to Mozilla
 ```
 
-The code is plain JavaScript with no bundler or build tooling, so what is in `src/` is exactly what ships. The only build step copies `src/` and the right manifest into `dist/`.
+The code is plain JavaScript with no bundler or build tooling, so what is in `src/` is exactly what ships. The only build step copies `src/` and the right manifest into `dist/`. See [CONVENTIONS.md](CONVENTIONS.md) for the UI, help text, versioning, config and code style rules.
 
 | Path | Contents |
 | --- | --- |
@@ -91,6 +101,7 @@ The code is plain JavaScript with no bundler or build tooling, so what is in `sr
 | `src/options.*` | Settings page |
 | `src/history.*` | Closed tab history page |
 | `manifests/` | One manifest per browser. Chrome needs `background.service_worker`, Firefox needs `background.scripts` |
+| `store/` | Store listing text, icon and promo images, screenshots |
 | `test/` | Tests |
 
 ## Licence
