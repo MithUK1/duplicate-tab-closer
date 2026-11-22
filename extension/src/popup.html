@@ -110,6 +110,7 @@
     }
     footer button { color: var(--muted); padding: 3px 6px; border-radius: 6px; }
     footer button:hover { color: var(--fg); background: var(--card); }
+    footer .version { margin-right: auto; align-self: center; font-size: 11px; color: var(--muted); }
 
     /* submenu */
     .subhead { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
@@ -173,8 +174,10 @@
     <div id="status" aria-live="polite"></div>
 
     <footer>
+      <span class="version" id="version"></span>
       <button id="history">Full history</button>
       <button id="settings">Settings</button>
+      <button id="help">Help</button>
     </footer>
   </div>
 
@@ -189,6 +192,7 @@
       <button id="history2">Full history</button>
     </footer>
   </div>
+  <script src="help.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

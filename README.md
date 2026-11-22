@@ -4,7 +4,7 @@ Closes duplicate browser tabs, either automatically as they open or on demand wi
 
 | | |
 | --- | --- |
-| Version | 1.3.3 |
+| Version | 1.4.0 |
 | Repository | https://github.com/MithUK1/duplicate-tab-closer |
 | Licence | MIT |
 
@@ -47,6 +47,8 @@ Firefox release builds only install extensions that Mozilla has signed.
 **Toolbar click** does what you choose in Settings: close all duplicates (default), close duplicates of the current tab, or show a menu. It can ask for confirmation first.
 
 **Right-click the icon** for the quick menu. Chrome adds an **Options** entry there for the settings page.
+
+**Help** at the top right of the settings page, and in the menu, opens this page. The **?** beside each settings heading shows a short explanation of that section. The version is shown small in the bottom left corner.
 
 ### How duplicates are detected
 
@@ -111,6 +113,7 @@ The code is plain JavaScript with no bundler or build tooling, so what is in `ex
 | `extension/src/confirm.*` | Confirmation popup |
 | `extension/src/options.*` | Settings page |
 | `extension/src/history.*` | Closed tab history page |
+| `extension/src/help.js` | All help wording, the Help address and the version label |
 | `extension/manifests/` | One manifest per browser. Chrome needs `background.service_worker`, Firefox needs `background.scripts` |
 | `store/` | Store listing text, icon and promo images, screenshots |
 | `tests/` | Tests |

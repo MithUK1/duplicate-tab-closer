@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Closed tabs - Duplicate Tab Closer</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 15px system-ui, sans-serif; max-width: 760px; margin: 32px auto; padding: 0 16px; }
+    h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    h1 img { width: 32px; height: 32px; }
+    .sub { opacity: .65; margin: 0 0 18px; font-size: 13px; }
+    .bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .bar input, .bar select { font: inherit; padding: 6px; }
+    .bar input { flex: 1; min-width: 160px; }
+    button { padding: 6px 12px; cursor: pointer; font: inherit; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid rgba(127,127,127,.2); }
+    li:hover { background: rgba(127,127,127,.08); }
+    li img, li .ph { width: 18px; height: 18px; flex: none; }
+    .txt { flex: 1; min-width: 0; }
+    .txt b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .txt small { display: block; opacity: .6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .meta { font-size: 12px; opacity: .7; white-space: nowrap; text-align: right; }
+    .tag { display: inline-block; padding: 1px 6px; border-radius: 8px; background: rgba(59,130,246,.2); margin-left: 6px; }
+    .empty { padding: 24px; text-align: center; opacity: .6; }
+  </style>
+</head>
+<body>
+  <h1><img src="icons/icon48.png" alt=""> Closed tabs</h1>
+  <p class="sub">This session only. The list is wiped when the browser closes.</p>
+
+  <div class="bar">
+    <input id="q" type="search" placeholder="Search title or URL">
+    <select id="filter">
+      <option value="all">All closed tabs</option>
+      <option value="duplicate">Duplicates only</option>
+      <option value="closed">Other closed tabs</option>
+    </select>
+    <button id="restoreShown">Reopen all shown</button>
+    <button id="restoreDupes">Reopen all duplicates</button>
+    <button id="clear">Clear</button>
+  </div>
+
+  <ul id="list"></ul>
+  <script src="history.js"></script>
+</body>
+</html>

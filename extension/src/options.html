@@ -24,12 +24,18 @@
     button { padding: 6px 12px; cursor: pointer; }
     a { color: #3b82f6; cursor: pointer; }
     .disabled { opacity: .45; pointer-events: none; }
+    body { padding-bottom: 40px; }
+    #helpLink { margin-left: auto; font-size: 14px; font-weight: normal; }
+    .help { width: 22px; height: 22px; padding: 0; margin-left: 6px; border-radius: 50%; font-size: 12px; line-height: 1; vertical-align: middle; text-transform: none; letter-spacing: 0; }
+    .help-text { margin: 6px 0 10px; padding: 6px 10px; border: 1px solid rgba(127,127,127,.35); border-radius: 8px; font-size: 13px; }
+    .help-text p { margin: 6px 0; }
+    #version { position: fixed; left: 10px; bottom: 6px; font-size: 11px; opacity: .6; }
   </style>
 </head>
 <body>
-  <h1><img src="icons/icon48.png" alt=""> Duplicate Tab Closer <span id="saved">Saved</span></h1>
+  <h1><img src="icons/icon48.png" alt=""> Duplicate Tab Closer <span id="saved">Saved</span><a id="helpLink">Help</a></h1>
 
-  <h2>Toolbar button</h2>
+  <h2>Toolbar button <button type="button" class="help" data-help="toolbar" aria-label="Explain these settings">?</button></h2>
   <div class="block">
     <label for="iconAction">When I click the toolbar icon</label>
     <select id="iconAction">
@@ -48,7 +54,7 @@
     <span>Show the duplicate count on the toolbar icon<small>A live number of how many tabs a click would close. Hidden when there are none.</small></span>
   </label>
 
-  <h2>Behaviour</h2>
+  <h2>Behaviour <button type="button" class="help" data-help="behaviour" aria-label="Explain these settings">?</button></h2>
   <label class="row">
     <input type="checkbox" id="autoClose">
     <span>Auto-close duplicates as they open<small>Only applies to the tab you are looking at. Duplicates opened in the background (middle click) are left alone and counted on the icon. When off, duplicates are only closed from the toolbar button.</small></span>
@@ -76,9 +82,10 @@
       <option value="existing">The existing tab (close the new one)</option>
       <option value="new">The new tab (close the old one)</option>
     </select>
+    <small>Used by auto-close. The existing tab by default.</small>
   </div>
 
-  <h2>What counts as a duplicate</h2>
+  <h2>What counts as a duplicate <button type="button" class="help" data-help="matching" aria-label="Explain these settings">?</button></h2>
   <label class="row">
     <input type="checkbox" id="ignoreHash">
     <span>Ignore #fragment<small>page.html#top and page.html#bottom match.</small></span>
@@ -88,11 +95,11 @@
     <span>Ignore ?query string<small>Off by default, as many sites use the query to pick the page (e.g. YouTube videos).</small></span>
   </label>
 
-  <h2>Never touch these sites</h2>
+  <h2>Never touch these sites <button type="button" class="help" data-help="sites" aria-label="Explain these settings">?</button></h2>
   <textarea id="whitelist" placeholder="mail.google.com&#10;youtube.com&#10;one domain per line"></textarea>
   <small style="opacity:.7">Subdomains are included automatically.</small>
 
-  <h2>Closed tab history</h2>
+  <h2>Closed tab history <button type="button" class="help" data-help="history" aria-label="Explain these settings">?</button></h2>
   <label class="row">
     <input type="checkbox" id="trackHistory">
     <span>Also record tabs I close myself<small>Duplicates closed by this extension are always recorded so they can be reopened. Web pages only. Normally kept in memory only.</small></span>
@@ -104,6 +111,7 @@
   <div class="block">
     <label for="historyLimit">Maximum entries to keep</label>
     <input type="number" id="historyLimit" min="20" max="2000" step="10">
+    <small>The oldest entries are dropped beyond this. 500 by default.</small>
   </div>
   <div class="block">
     <label for="historyMinutes">Forget closed tabs after (minutes)<small>Entries older than this are removed from the history for good. 5 by default. Set 0 to keep them until you clear the history.</small></label>
@@ -115,6 +123,8 @@
     Duplicates closed so far: <b id="total">0</b>
     <button id="reset" style="margin-left:12px">Reset</button>
   </div>
+  <span id="version"></span>
+  <script src="help.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 
 Short rules this tool follows, so changes stay consistent.
 
-Current version: 1.3.3. Repository: https://github.com/MithUK1/duplicate-tab-closer
+Current version: 1.4.0. Repository: https://github.com/MithUK1/duplicate-tab-closer
 
 ## UI look
 
@@ -17,6 +17,9 @@ Current version: 1.3.3. Repository: https://github.com/MithUK1/duplicate-tab-clo
 ## Help text
 
 - Every setting has a one-line grey `<small>` hint directly under its label.
+- Each settings heading has a `?` button that opens a short explanation of that section. All of that wording lives in `extension/src/help.js`, in `HELP`.
+- A Help link at the top right of the settings page, and a Help button in the popup, open the README on GitHub (`README_URL` in `help.js`).
+- The version shows as `vX.Y.Z - MUK1`, small, in the bottom left corner of the settings, popup and history pages. It is read from the manifest, so it never needs editing by hand.
 - Sentence case, plain words, no jargon. Say what happens, then what the default is ("Off by default.").
 - Where a setting has an on and an off effect, state both ("When off, ...").
 - No dashes as punctuation in prose. Use commas, full stops or a single hyphen.

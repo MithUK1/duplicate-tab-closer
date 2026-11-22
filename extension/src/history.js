@@ -102,4 +102,5 @@ api.storage.onChanged.addListener((changes, area) => {
 });
 
 load();
+showVersion();
 setInterval(render, 30000); // keep the "x min ago" labels fresh

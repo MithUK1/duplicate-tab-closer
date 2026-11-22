@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 14px system-ui, sans-serif; width: 320px; margin: 14px; }
+    h2 { font-size: 15px; margin: 0 0 8px; }
+    ul { margin: 8px 0; padding-left: 18px; max-height: 150px; overflow: auto; font-size: 13px; }
+    li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .btns { display: flex; gap: 8px; margin: 12px 0 8px; }
+    button { flex: 1; padding: 8px; cursor: pointer; }
+    #ok { font-weight: 600; }
+    label { font-size: 13px; opacity: .8; display: block; }
+  </style>
+</head>
+<body>
+  <h2 id="title">Checking...</h2>
+  <ul id="list"></ul>
+  <div class="btns">
+    <button id="ok" hidden>Close them</button>
+    <button id="cancel">Cancel</button>
+  </div>
+  <label><input type="checkbox" id="dontAsk"> Don't ask again</label>
+  <script src="confirm.js"></script>
+</body>
+</html>

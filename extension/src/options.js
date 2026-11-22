@@ -86,6 +86,31 @@ function syncConfirmRow() {
   );
 })();
 
+// The ? beside a section heading opens or closes a short explanation under it.
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".help");
+  if (!button) return;
+  const heading = button.closest("h2");
+  const open = heading.nextElementSibling;
+  if (open?.classList.contains("help-text")) {
+    open.remove();
+    return;
+  }
+  const box = document.createElement("div");
+  box.className = "help-text";
+  for (const [term, text] of HELP[button.dataset.help]) {
+    const p = document.createElement("p");
+    const strong = document.createElement("strong");
+    strong.textContent = `${term}: `;
+    p.append(strong, text);
+    box.append(p);
+  }
+  heading.after(box);
+});
+
+$("helpLink").addEventListener("click", () => api.tabs.create({ url: README_URL }));
+showVersion();
+
 api.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.totalClosed) {
     $("total").textContent = changes.totalClosed.newValue ?? 0;

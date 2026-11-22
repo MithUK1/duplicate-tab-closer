@@ -149,6 +149,12 @@ const openHistory = () => {
 $("history").addEventListener("click", openHistory);
 $("history2").addEventListener("click", openHistory);
 
+$("help").addEventListener("click", () => {
+  api.tabs.create({ url: README_URL });
+  window.close();
+});
+showVersion();
+
 $("settings").addEventListener("click", () => {
   api.runtime.openOptionsPage();
   window.close();
