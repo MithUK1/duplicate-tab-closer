@@ -1,5 +1,8 @@
 node_modules/
-dist/
 web-ext-artifacts/
+extension/chrome/
+extension/firefox/
 *.zip
 *.xpi
+*.lnk
+Backups/

@@ -8,7 +8,7 @@ Closes duplicate browser tabs, either automatically as they open or on demand wi
 | Repository | https://github.com/MithUK1/duplicate-tab-closer |
 | Licence | MIT |
 
-## Features
+## What it does
 
 - **One-click cleanup.** Click the toolbar icon to close every duplicate tab. The icon shows a live count of how many tabs a click would close.
 - **Auto-close.** Optionally closes the tab you are looking at the moment it loads a page you already have open, and takes you to the existing one.
@@ -27,19 +27,19 @@ Build the unpacked extensions first (needs Node 18 or newer, no dependencies):
 npm run build
 ```
 
-This creates `dist/chrome` and `dist/firefox`.
+This creates `extension/chrome` and `extension/firefox`.
 
 ### Chrome, Edge, Brave
 
 1. Open `chrome://extensions` (or `edge://extensions`) and turn on Developer mode.
-2. Click **Load unpacked** and choose `dist/chrome`.
+2. Click **Load unpacked** and choose `extension/chrome`.
 
 ### Firefox
 
 Firefox release builds only install extensions that Mozilla has signed.
 
-- **Quick test:** open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on** and choose `dist/firefox/manifest.json`. It is removed when Firefox restarts.
-- **Permanent install:** sign it for your own use. Run `npm install` then `npm run pack:firefox`, upload the zip from `dist/packages` to the [Add-on Developer Hub](https://addons.mozilla.org/developers/) as an unlisted add-on ("On your own"), then install the signed `.xpi` from `about:addons`. Each upload needs a new `version` in `manifests/firefox.json`.
+- **Quick test:** open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on** and choose `extension/firefox/manifest.json`. It is removed when Firefox restarts.
+- **Permanent install:** sign it for your own use. Run `npm install` then `npm run pack:firefox`, upload the zip from `extension` to the [Add-on Developer Hub](https://addons.mozilla.org/developers/) as an unlisted add-on ("On your own"), then install the signed `.xpi` from `about:addons`. Each upload needs a new `version` in `extension/manifests/firefox.json`.
 - Firefox Developer Edition, Nightly and ESR can run it unsigned by setting `xpinstall.signatures.required` to `false` in `about:config`.
 
 ## Using it
@@ -48,7 +48,15 @@ Firefox release builds only install extensions that Mozilla has signed.
 
 **Right-click the icon** for the quick menu. Chrome adds an **Options** entry there for the settings page.
 
-### Settings
+### How duplicates are detected
+
+Two tabs are duplicates when their URLs match after the options above are applied. Only `http`, `https`, `file` and `ftp` pages are compared. Normal and private tabs are never matched with each other.
+
+Browsers do not say when a tab was made with **Duplicate**. The extension treats a new tab as a deliberate duplicate when it opens directly beside a tab with the same URL, or its opener has the same URL. Those tabs, and the tab they came from, are exempt from auto-close. As a result, a tab opened right next to a tab with the same URL is also left open.
+
+Auto-close only acts on the tab in front of you. A duplicate that opens in the background is left open and counted on the toolbar icon until you close it.
+
+## Settings
 
 | Setting | What it does |
 | --- | --- |
@@ -69,13 +77,9 @@ Firefox release builds only install extensions that Mozilla has signed.
 
 Pinned tabs are always kept in preference to unpinned ones.
 
-## How duplicates are detected
+## Where things are stored
 
-Two tabs are duplicates when their URLs match after the options above are applied. Only `http`, `https`, `file` and `ftp` pages are compared. Normal and private tabs are never matched with each other.
-
-Browsers do not say when a tab was made with **Duplicate**. The extension treats a new tab as a deliberate duplicate when it opens directly beside a tab with the same URL, or its opener has the same URL. Those tabs, and the tab they came from, are exempt from auto-close. As a result, a tab opened right next to a tab with the same URL is also left open.
-
-Auto-close only acts on the tab in front of you. A duplicate that opens in the background is left open and counted on the toolbar icon until you close it.
+Settings and the closed tab history are kept in the browser's own extension storage on this computer. Nothing is synced.
 
 ## Privacy
 
@@ -85,7 +89,12 @@ The closed tab history is kept in memory only. Each entry is removed after the r
 
 Site icons are kept only when the site gives a normal web address for them. Icons embedded as data are left out, so the history may show a plain placeholder for some sites, mostly in Firefox.
 
-## Development
+## Troubleshooting
+
+- A duplicate stayed open: auto-close only acts on the tab in front of you. A duplicate opened in the background stays open and is counted on the icon.
+- A tab closed by mistake: right-click the icon and reopen the last closed duplicate, or open the full history. History entries are forgotten after 5 minutes by default.
+
+## Build from source
 
 ```
 npm test             # run the logic tests against a mocked browser API
@@ -93,18 +102,18 @@ npm run lint         # build and lint the Firefox extension with web-ext
 npm run pack:firefox # build a zip for submission to Mozilla
 ```
 
-The code is plain JavaScript with no bundler or build tooling, so what is in `src/` is exactly what ships. The only build step copies `src/` and the right manifest into `dist/`. See [CONVENTIONS.md](CONVENTIONS.md) for the UI, help text, versioning, config and code style rules.
+The code is plain JavaScript with no bundler or build tooling, so what is in `extension/src/` is exactly what ships. The only build step copies it and the right manifest into `extension/chrome` and `extension/firefox`. See [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for the UI, help text, versioning, config and code style rules.
 
 | Path | Contents |
 | --- | --- |
-| `src/background.js` | All logic: duplicate detection, history, menus, badge |
-| `src/popup.*` | Toolbar menu, used when the click action is set to menu |
-| `src/confirm.*` | Confirmation popup |
-| `src/options.*` | Settings page |
-| `src/history.*` | Closed tab history page |
-| `manifests/` | One manifest per browser. Chrome needs `background.service_worker`, Firefox needs `background.scripts` |
+| `extension/src/background.js` | All logic: duplicate detection, history, menus, badge |
+| `extension/src/popup.*` | Toolbar menu, used when the click action is set to menu |
+| `extension/src/confirm.*` | Confirmation popup |
+| `extension/src/options.*` | Settings page |
+| `extension/src/history.*` | Closed tab history page |
+| `extension/manifests/` | One manifest per browser. Chrome needs `background.service_worker`, Firefox needs `background.scripts` |
 | `store/` | Store listing text, icon and promo images, screenshots |
-| `test/` | Tests |
+| `tests/` | Tests |
 
 ## Licence
 

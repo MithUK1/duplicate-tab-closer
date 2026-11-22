@@ -1,4 +1,4 @@
-// Logic tests for src/background.js, run against an in-memory fake of the browser APIs.
+// Logic tests for extension/src/background.js, run against an in-memory fake of the browser APIs.
 // Run with: npm test
 
 const assert = require("node:assert");
@@ -169,7 +169,7 @@ async function reset(settings = {}) {
   });
 }
 
-require(path.join(__dirname, "..", "src", "background.js"));
+require(path.join(__dirname, "..", "extension", "src", "background.js"));
 
 /* ---------- tests ---------- */
 
