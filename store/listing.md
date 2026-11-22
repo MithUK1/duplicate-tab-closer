@@ -36,4 +36,4 @@ Privacy policy URL: https://github.com/MithUK1/duplicate-tab-closer#privacy
 
 ## Firefox (AMO)
 Data collection: none required (declared in the manifest).
-Source code: https://github.com/MithUK1/duplicate-tab-closer (build with `npm run build`, output in dist/firefox)
+Source code: https://github.com/MithUK1/duplicate-tab-closer (build with `npm run build`, output in extension/firefox)
