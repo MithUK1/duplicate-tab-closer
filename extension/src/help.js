@@ -32,9 +32,9 @@ const HELP = {
   ],
 };
 
-// Fills the small "vX.Y.Z - MUK1" label in the bottom left corner from the manifest version.
+// Fills the small "vX.Y.Z" label in the bottom left corner from the manifest version.
 function showVersion() {
   const el = document.getElementById("version");
   const api = globalThis.browser ?? globalThis.chrome;
-  if (el) el.textContent = `v${api.runtime.getManifest().version} - MUK1`;
+  if (el) el.textContent = `v${api.runtime.getManifest().version}`;
 }
