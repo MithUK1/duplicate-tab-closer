@@ -4,7 +4,7 @@ Closes duplicate browser tabs, either automatically as they open or on demand wi
 
 | | |
 | --- | --- |
-| Version | 1.3.2 |
+| Version | 1.3.3 |
 | Repository | https://github.com/MithUK1/duplicate-tab-closer |
 | Licence | MIT |
 
@@ -82,6 +82,8 @@ Auto-close only acts on the tab in front of you. A duplicate that opens in the b
 Nothing leaves your browser and nothing is collected. The `tabs` permission is used to read tab URLs and titles for comparison and for the closed tab history. The `contextMenus` permission adds the right-click menu on the icon, `alarms` runs the once-a-minute clean-up of expired history, and `storage` holds settings.
 
 The closed tab history is kept in memory only. Each entry is removed after the retention time (5 minutes by default), and everything is wiped when the browser closes or the extension is reloaded. If you turn on **Keep the history after the browser closes**, URLs and titles of closed tabs are saved in the browser profile until they expire or you clear them. Clearing the history also removes the extension's internal working copies of closed tab URLs.
+
+Site icons are kept only when the site gives a normal web address for them. Icons embedded as data are left out, so the history may show a plain placeholder for some sites, mostly in Firefox.
 
 ## Development
 

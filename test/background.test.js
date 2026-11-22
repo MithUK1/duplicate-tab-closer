@@ -526,3 +526,50 @@ test("a duplicate opened in the foreground is closed and jumps to the original",
   assert.ok(!alive(fg));
   assert.deepStrictEqual(recorded.activated, [first.id]);
 });
+
+test("a burst of tab updates is written to storage in one go", async () => {
+  await reset({ autoClose: false });
+  const tab = await open("https://burst.example/");
+  await settle();
+  await wait(600);
+
+  let writes = 0;
+  const count = (changes, area) => {
+    if (area === "session" && changes.cache) writes++;
+  };
+  chrome.storage.onChanged.addListener(count);
+  for (const changeInfo of [{ status: "loading" }, { title: "Burst" }, { favIconUrl: "https://burst.example/i.png" }, { status: "complete" }]) {
+    Object.assign(tab, changeInfo.title ? { title: changeInfo.title } : {});
+    await tabEvents.onUpdated.fire(tab.id, changeInfo, { ...tab });
+  }
+  await wait(600);
+  chrome.storage.onChanged.listeners.splice(chrome.storage.onChanged.listeners.indexOf(count), 1);
+
+  assert.strictEqual(writes, 1, "four updates, one cache write");
+  assert.strictEqual(store.session.cache[tab.id].title, "Burst");
+});
+
+test("a closed tab is recorded with its latest title even before the cache is written", async () => {
+  await reset({ autoClose: false });
+  const tab = await open("https://late-title.example/");
+  await settle();
+  tab.title = "Late title";
+  await tabEvents.onUpdated.fire(tab.id, { title: "Late title" }, { ...tab });
+  await chrome.tabs.remove(tab.id);
+  await settle();
+  assert.strictEqual((await history())[0].title, "Late title");
+});
+
+test("icon data URLs are not stored, web icon addresses are", async () => {
+  await reset({ autoClose: false });
+  const dataIcon = await open("https://icon-data.example/", { favIconUrl: "data:image/png;base64," + "A".repeat(5000) });
+  const webIcon = await open("https://icon-web.example/", { favIconUrl: "https://icon-web.example/favicon.ico" });
+  await settle();
+  await chrome.tabs.remove(dataIcon.id);
+  await chrome.tabs.remove(webIcon.id);
+  await settle();
+  const items = await history();
+  assert.strictEqual(items.find((e) => e.url.includes("icon-data")).favIconUrl, "");
+  assert.strictEqual(items.find((e) => e.url.includes("icon-web")).favIconUrl, "https://icon-web.example/favicon.ico");
+  assert.ok(!JSON.stringify(store).includes("base64"));
+});

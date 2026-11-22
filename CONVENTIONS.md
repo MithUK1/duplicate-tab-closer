@@ -2,7 +2,7 @@
 
 Short rules this tool follows, so changes stay consistent.
 
-Current version: 1.3.2. Repository: https://github.com/MithUK1/duplicate-tab-closer
+Current version: 1.3.3. Repository: https://github.com/MithUK1/duplicate-tab-closer
 
 ## UI look
 

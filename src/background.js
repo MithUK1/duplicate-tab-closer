@@ -64,10 +64,15 @@ function normalise(url, opts) {
 // Normal and private tabs are never treated as duplicates of each other.
 const groupKey = (t, s) => (t.incognito ? "i|" : "n|") + normalise(t.url, s);
 
+// Only short web addresses are kept for icons. Some sites, and Firefox in general, report
+// icons as data: URLs of many KB, which would be copied into every cache and history write.
+const MAX_ICON_URL = 2048;
+const iconUrl = (u) => (/^https?:/i.test(u || "") && u.length <= MAX_ICON_URL ? u : "");
+
 const tabInfo = (t) => ({
   url: t.url || t.pendingUrl || "",
   title: t.title || "",
-  favIconUrl: t.favIconUrl || "",
+  favIconUrl: iconUrl(t.favIconUrl),
   pinned: !!t.pinned,
   windowId: t.windowId,
   index: t.index,
@@ -143,34 +148,62 @@ function migrateHistory(toLocal) {
 
 // Removes entries older than the retention time, then lets the tab cache forget their pages.
 async function expireHistory() {
-  await locked(async () => {
+  const expired = await locked(async () => {
     const area = await histArea();
     const [{ history }, { historyMinutes }] = await Promise.all([
       area.get({ history: [] }),
       api.storage.local.get({ historyMinutes: DEFAULTS.historyMinutes }),
     ]);
     const kept = fresh(history, historyMinutes);
-    if (kept.length !== history.length) await area.set({ history: kept });
+    if (kept.length === history.length) return false;
+    await area.set({ history: kept });
+    return true;
   });
-  await rebuildCache();
+  // Only resync the tab cache when something was actually removed, so the minute alarm
+  // does no real work while the history is unchanged.
+  if (expired) await rebuildCache();
 }
 
 const EMPTY_ALLOW = () => ({ tabs: {}, urls: {} });
 
 /* ---------- tab cache (so we know what a tab was when it closes) ---------- */
 
+// A page load fires several update events (loading, address, title, icon, complete), and a
+// session restore fires them for every tab at once. Updates are collected here and written to
+// session storage at most twice a second, instead of rewriting the whole cache for each one.
+const CACHE_FLUSH_MS = 500;
+const pendingTabs = new Map();
+let flushTimer;
+
 function cacheTab(tab) {
-  return locked(async () => {
-    const cache = await sget("cache", {});
-    cache[tab.id] = tabInfo(tab);
-    await sset("cache", cache);
-  });
+  pendingTabs.set(tab.id, tabInfo(tab));
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = undefined;
+    locked(async () => {
+      if (!pendingTabs.size) return;
+      await sset("cache", applyPending(await sget("cache", {})));
+    });
+  }, CACHE_FLUSH_MS);
+}
+
+// Merges the collected tab updates into a cache read from storage. Every reader of the cache
+// calls this inside the lock, so it always sees the latest title and position of a tab.
+function applyPending(cache) {
+  for (const [id, info] of pendingTabs) cache[id] = info;
+  pendingTabs.clear();
+  return cache;
 }
 
 async function rebuildCache() {
   const tabs = await api.tabs.query({});
   return locked(async () => {
-    const [cache, closing] = await Promise.all([sget("cache", {}), sget("closing", {})]);
+    const [stored, closing, allow] = await Promise.all([
+      sget("cache", {}),
+      sget("closing", {}),
+      sget("allow", EMPTY_ALLOW()),
+    ]);
+    const cache = applyPending(stored);
     const live = new Set(tabs.map((t) => t.id));
     for (const t of tabs) cache[t.id] = tabInfo(t);
 
@@ -186,7 +219,10 @@ async function rebuildCache() {
     const now = Date.now();
     for (const [id, c] of Object.entries(closing)) if (now - c.t > 10000) delete closing[id];
 
-    await Promise.all([sset("cache", cache), sset("closing", closing)]);
+    // Reopened addresses are only shielded from auto-close for a minute.
+    for (const [url, until] of Object.entries(allow.urls)) if (until < now) delete allow.urls[url];
+
+    await Promise.all([sset("cache", cache), sset("closing", closing), sset("allow", allow)]);
   });
 }
 
@@ -200,12 +236,13 @@ function markClosing(tabs, reason, batch) {
 
 api.tabs.onRemoved.addListener((tabId) => {
   locked(async () => {
-    const [cache, closing, allow, created] = await Promise.all([
+    const [stored, closing, allow, created] = await Promise.all([
       sget("cache", {}),
       sget("closing", {}),
       sget("allow", EMPTY_ALLOW()),
       sget("created", {}),
     ]);
+    const cache = applyPending(stored);
     const c = closing[tabId];
     const info = c?.info ?? cache[tabId];
     const gone = cache[tabId];
@@ -259,17 +296,22 @@ const ORDERS = {
   active: (a, b) => (a.active !== b.active ? (a.active ? -1 : 1) : a.id - b.id),
 };
 
-// Returns the tab objects that would be closed.
-async function planClose(mode, tabArg) {
-  const s = await getSettings();
+// Returns the tab objects that would be closed. ctx, when given, holds settings and the full
+// tab list already fetched by the caller, so several plans can share one tab query.
+async function planClose(mode, tabArg, ctx) {
+  const s = ctx?.s ?? (await getSettings());
   const wl = parseWhitelist(s.whitelist);
+  const tabsIn = async (windowId) =>
+    ctx
+      ? ctx.all.filter((t) => s.allWindows || t.windowId === windowId)
+      : listTabs(s.allWindows, windowId);
 
   if (mode === "current") {
     let cur = tabArg;
     if (!cur) [cur] = await api.tabs.query({ active: true, lastFocusedWindow: true });
     if (!cur || !isCheckable(cur.url) || isWhitelisted(cur.url, wl)) return [];
     const key = groupKey(cur, s);
-    const tabs = await listTabs(s.allWindows, cur.windowId);
+    const tabs = await tabsIn(cur.windowId);
     return tabs.filter(
       (t) => t.id !== cur.id && !t.pinned && isCheckable(t.url) && groupKey(t, s) === key
     );
@@ -277,7 +319,7 @@ async function planClose(mode, tabArg) {
 
   let windowId = tabArg?.windowId;
   if (!s.allWindows && windowId === undefined) windowId = (await api.windows.getLastFocused()).id;
-  const tabs = await listTabs(s.allWindows, windowId);
+  const tabs = await tabsIn(windowId);
   const groups = new Map();
   for (const tab of tabs) {
     if (!isCheckable(tab.url) || isWhitelisted(tab.url, wl)) continue;
@@ -377,11 +419,12 @@ async function checkTab(tab) {
 function clearHistory() {
   return locked(async () => {
     const live = new Set((await api.tabs.query({})).map((t) => t.id));
-    const [cache, allow, created] = await Promise.all([
+    const [stored, allow, created] = await Promise.all([
       sget("cache", {}),
       sget("allow", EMPTY_ALLOW()),
       sget("created", {}),
     ]);
+    const cache = applyPending(stored);
     for (const id of Object.keys(cache)) if (!live.has(Number(id))) delete cache[id];
     for (const id of Object.keys(allow.tabs)) if (!live.has(Number(id))) delete allow.tabs[id];
     for (const id of Object.keys(created)) if (!live.has(Number(id))) delete created[id];
@@ -491,11 +534,26 @@ function scheduleRefresh() {
   badgeTimer = setTimeout(refreshBadge, 250);
 }
 
+// Both toolbar counts from one settings read and one tab query, instead of one each.
+async function countDuplicates() {
+  const [s, all, win] = await Promise.all([
+    getSettings(),
+    api.tabs.query({}),
+    api.windows.getLastFocused().catch(() => undefined),
+  ]);
+  const ctx = { s, all };
+  const cur = all.find((t) => t.active && t.windowId === win?.id);
+  const [dupes, current] = await Promise.all([
+    planClose("all", cur ?? (win ? { windowId: win.id } : undefined), ctx),
+    cur ? planClose("current", cur, ctx) : [],
+  ]);
+  return { s, all: dupes, cur: current };
+}
+
 async function refreshBadge() {
   if (Date.now() < flashUntil) return;
   try {
-    const s = await getSettings();
-    const [all, cur] = await Promise.all([planClose("all"), planClose("current")]);
+    const { s, all, cur } = await countDuplicates();
 
     if (s.showBadge && all.length) {
       await api.action.setBadgeBackgroundColor({ color: "#ea580c" });
@@ -627,7 +685,7 @@ async function flagIfDeliberate(tabId, key, candidates) {
 
 api.tabs.onCreated.addListener((tab) => {
   locked(async () => {
-    const cache = await sget("cache", {});
+    const cache = applyPending(await sget("cache", {}));
     for (const o of Object.values(cache)) {
       if (o.windowId === tab.windowId && o.index >= tab.index) o.index++;
     }
@@ -745,8 +803,8 @@ api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         return { count: await restoreEntries(entries, !!msg.activate && entries.length === 1) };
       }
       case "counts": {
-        const [all, current] = await Promise.all([planClose("all"), planClose("current")]);
-        return { all: all.length, current: current.length };
+        const { all, cur } = await countDuplicates();
+        return { all: all.length, current: cur.length };
       }
       case "undoLast":
         return { count: await undoNext() };
